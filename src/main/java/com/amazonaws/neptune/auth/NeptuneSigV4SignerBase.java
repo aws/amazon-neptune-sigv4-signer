@@ -145,7 +145,7 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * the native HTTP request.
      *
      * @param request the request to be signed
-     * @throws NeptuneSigV4SignerException
+     * @throws NeptuneSigV4SignerException  in case something goes wrong during signing
      */
     @Override
     public void signRequest(final T request) throws NeptuneSigV4SignerException {
@@ -224,7 +224,7 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
 
 
     /**
-     * Extracts the parameters from a query string (such as param1=value1&param2=value2&...).
+     * Extracts the parameters from a query string (such as param1=value1&amp;param2=value2&amp;...).
      * The same parameter name may occur multiple times (e.g. param1 might actually be the
      * same string value as param2). The result is represented as a map from unique key
      * names to a list of their values. The query string may be null, in which case an
