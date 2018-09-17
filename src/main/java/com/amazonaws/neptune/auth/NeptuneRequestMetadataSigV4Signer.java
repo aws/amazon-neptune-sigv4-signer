@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static com.amazonaws.auth.internal.SignerConstants.HOST;
 import static com.amazonaws.auth.internal.SignerConstants.X_AMZ_DATE;
+import static com.amazonaws.auth.internal.SignerConstants.X_AMZ_SECURITY_TOKEN;
 
 /**
  * Signer for HTTP requests encapsulalted in {@link RequestMetadata}s.
@@ -148,6 +149,14 @@ public class NeptuneRequestMetadataSigV4Signer extends NeptuneSigV4SignerBase<Re
         request.getHeaders().put(HOST, signature.getHostHeader());
         request.getHeaders().put(X_AMZ_DATE, signature.getXAmzDateHeader());
         request.getHeaders().put(AUTHORIZATION, signature.getAuthorizationHeader());
+
+        // https://docs.aws.amazon.com/general/latest/gr/sigv4-add-signature-to-request.html
+        // For temporary security credentials, it requires an additional HTTP header
+        // or query string parameter for the security token. The name of the header
+        // or query string parameter is X-Amz-Security-Token, and the value is the session token.
+        if (!signature.getSessionToken().isEmpty()) {
+            request.getHeaders().put(X_AMZ_SECURITY_TOKEN, signature.getSessionToken());
+        }
     }
 
 }

@@ -60,6 +60,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
     protected static final String TEST_QUERY_PARAM_NAME = "query";
     protected static final String TEST_DATE_HEADER_VALUE = "2020/10/04";
     protected static final String TEST_AUTHORIZATION_HEADER_VALUE = "Authorization Header";
+    protected static final String TEST_SESSION_TOKEN_VALUE = "Session Token";
 
     protected final AWSCredentialsProvider awsCredentialsProvider = mock(AWSCredentialsProvider.class);
 
@@ -229,8 +230,9 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final String hostname = TEST_HOST_NAME;
         final String dateHeader = TEST_DATE_HEADER_VALUE;
         final String authHeader = TEST_AUTHORIZATION_HEADER_VALUE;
-
-        final NeptuneSigV4SignerBase.NeptuneSigV4Signature signature = new NeptuneSigV4SignerBase.NeptuneSigV4Signature(hostname, dateHeader, authHeader);
+        final String sessionToken = TEST_SESSION_TOKEN_VALUE;
+        final NeptuneSigV4SignerBase.NeptuneSigV4Signature signature =
+                new NeptuneSigV4SignerBase.NeptuneSigV4Signature(hostname, dateHeader, authHeader, sessionToken);
         signer.attachSignature(request, signature);
 
         final Map<String, String> attachedHeaders = getRequestHeaders(request);
