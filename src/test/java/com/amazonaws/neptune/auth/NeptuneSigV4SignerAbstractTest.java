@@ -216,9 +216,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         signer.toSignableRequest(request);
     }
 
-    @Test
-    public void attachSignatureHeaders() throws Exception {
-
+    private void testAttachSignatureHeaders(final String sessionToken) throws Exception {
         // prep
         final String uri = TEST_FULL_URI_WITH_SLASH;
         final Map<String, String> requestHeaders = new HashMap<>();
@@ -230,7 +228,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final String hostname = TEST_HOST_NAME;
         final String dateHeader = TEST_DATE_HEADER_VALUE;
         final String authHeader = TEST_AUTHORIZATION_HEADER_VALUE;
-        final String sessionToken = TEST_SESSION_TOKEN_VALUE;
+
         final NeptuneSigV4SignerBase.NeptuneSigV4Signature signature =
                 new NeptuneSigV4SignerBase.NeptuneSigV4Signature(hostname, dateHeader, authHeader, sessionToken);
         signer.attachSignature(request, signature);
@@ -241,5 +239,17 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         assertEquals(HEADER_ONE_VALUE, attachedHeaders.get(HEADER_ONE_NAME));
         assertEquals(HEADER_TWO_VALUE, attachedHeaders.get(HEADER_TWO_NAME));
         assertEquals(authHeader, attachedHeaders.get(SignerConstants.AUTHORIZATION));
+    }
+
+    @Test
+    public void attachSignatureHeadersWithSessionToken() throws Exception {
+        final String sessionToken = TEST_SESSION_TOKEN_VALUE;
+        testAttachSignatureHeaders(sessionToken);
+    }
+
+    @Test
+    public void attachSignatureHeadersWithEmptySessionToken() throws Exception {
+        final String sessionToken = "";
+        testAttachSignatureHeaders(sessionToken);
     }
 }
