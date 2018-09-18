@@ -19,6 +19,7 @@ import com.amazonaws.DefaultRequest;
 import com.amazonaws.SignableRequest;
 import com.amazonaws.auth.AWS4Signer;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.http.HttpMethodName;
 import com.amazonaws.util.SdkHttpUtils;
 
@@ -86,7 +87,6 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
 
         checkNotNull(regionName, "The region name must not be null");
         checkNotNull(awsCredentialsProvider, "The credentials provider must not be null");
-
         this.awsCredentialsProvider = awsCredentialsProvider;
 
         // initialize the signer delegate
@@ -134,7 +134,6 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
     protected abstract void attachSignature(final T nativeRequest, final NeptuneSigV4Signature signature)
             throws NeptuneSigV4SignerException;
 
-
     /**
      * Main logics to sign the request. The scheme is to convert the request into a
      * signable request using toSignableRequest, then sign it using the AWS SDK, and
@@ -159,11 +158,19 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
             // 2. Sign the AWS SDK signable request (which internally adds some HTTP headers)
             //    => generic, using the AWS SDK signer
             aws4Signer.sign(awsSignableRequest, awsCredentialsProvider.getCredentials());
+
+            // extract session token if temporary credentials are provided
+            String sessionToken = "";
+            if ((awsCredentialsProvider.getCredentials() instanceof BasicSessionCredentials)) {
+                sessionToken = ((BasicSessionCredentials) awsCredentialsProvider.getCredentials()).getSessionToken();
+            }
+
             final NeptuneSigV4Signature signature =
                     new NeptuneSigV4Signature(
                             awsSignableRequest.getHeaders().get(HOST),
                             awsSignableRequest.getHeaders().get(X_AMZ_DATE),
-                            awsSignableRequest.getHeaders().get(AUTHORIZATION));
+                            awsSignableRequest.getHeaders().get(AUTHORIZATION),
+                            sessionToken);
 
             // 3. Copy over the Signature V4 headers to the original request
             //    => to be implemented in subclass
@@ -306,6 +313,11 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
          */
         private final String authorizationHeader;
 
+        /**
+         * Value of the Temporary credential session token.
+         */
+        private final String sessionToken;
+
 
         /**
          * Constructor.
@@ -315,10 +327,12 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
          * @param authorizationHeader string value of the authorization header used for signing the request
          */
         public NeptuneSigV4Signature(
-                final String hostHeader, final String xAmzDateHeader, final String authorizationHeader) {
+                final String hostHeader, final String xAmzDateHeader, final String authorizationHeader,
+                final String sessionToken) {
             this.hostHeader = hostHeader;
             this.xAmzDateHeader = xAmzDateHeader;
             this.authorizationHeader = authorizationHeader;
+            this.sessionToken = sessionToken;
         }
 
         /**
@@ -340,6 +354,13 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
          */
         public String getAuthorizationHeader() {
             return authorizationHeader;
+        }
+
+        /**
+         * @return the Session Token value
+         */
+        public String getSessionToken() {
+            return sessionToken;
         }
     }
 }

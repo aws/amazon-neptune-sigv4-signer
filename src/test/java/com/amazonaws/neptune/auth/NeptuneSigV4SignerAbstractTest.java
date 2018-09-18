@@ -60,6 +60,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
     protected static final String TEST_QUERY_PARAM_NAME = "query";
     protected static final String TEST_DATE_HEADER_VALUE = "2020/10/04";
     protected static final String TEST_AUTHORIZATION_HEADER_VALUE = "Authorization Header";
+    protected static final String TEST_SESSION_TOKEN_VALUE = "Session Token";
 
     protected final AWSCredentialsProvider awsCredentialsProvider = mock(AWSCredentialsProvider.class);
 
@@ -215,9 +216,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         signer.toSignableRequest(request);
     }
 
-    @Test
-    public void attachSignatureHeaders() throws Exception {
-
+    private void testAttachSignatureHeaders(final String sessionToken) throws Exception {
         // prep
         final String uri = TEST_FULL_URI_WITH_SLASH;
         final Map<String, String> requestHeaders = new HashMap<>();
@@ -230,7 +229,8 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final String dateHeader = TEST_DATE_HEADER_VALUE;
         final String authHeader = TEST_AUTHORIZATION_HEADER_VALUE;
 
-        final NeptuneSigV4SignerBase.NeptuneSigV4Signature signature = new NeptuneSigV4SignerBase.NeptuneSigV4Signature(hostname, dateHeader, authHeader);
+        final NeptuneSigV4SignerBase.NeptuneSigV4Signature signature =
+                new NeptuneSigV4SignerBase.NeptuneSigV4Signature(hostname, dateHeader, authHeader, sessionToken);
         signer.attachSignature(request, signature);
 
         final Map<String, String> attachedHeaders = getRequestHeaders(request);
@@ -239,5 +239,17 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         assertEquals(HEADER_ONE_VALUE, attachedHeaders.get(HEADER_ONE_NAME));
         assertEquals(HEADER_TWO_VALUE, attachedHeaders.get(HEADER_TWO_NAME));
         assertEquals(authHeader, attachedHeaders.get(SignerConstants.AUTHORIZATION));
+    }
+
+    @Test
+    public void attachSignatureHeadersWithSessionToken() throws Exception {
+        final String sessionToken = TEST_SESSION_TOKEN_VALUE;
+        testAttachSignatureHeaders(sessionToken);
+    }
+
+    @Test
+    public void attachSignatureHeadersWithEmptySessionToken() throws Exception {
+        final String sessionToken = "";
+        testAttachSignatureHeaders(sessionToken);
     }
 }
