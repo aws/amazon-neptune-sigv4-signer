@@ -19,7 +19,7 @@
     <groupId>com.amazonaws</groupId>
     <artifactId>amazon-neptune-sigv4-signer</artifactId>
     <packaging>jar</packaging>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
 
     <name>amazon-neptune-sigv4-signer</name>
     <description>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.48.Final</version>
+            <version>4.1.59.Final</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
