@@ -18,6 +18,7 @@ package com.amazonaws.neptune.auth;
 import com.amazonaws.DefaultRequest;
 import com.amazonaws.SignableRequest;
 import com.amazonaws.auth.AWS4Signer;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.http.HttpMethodName;
@@ -157,12 +158,13 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
 
             // 2. Sign the AWS SDK signable request (which internally adds some HTTP headers)
             //    => generic, using the AWS SDK signer
-            aws4Signer.sign(awsSignableRequest, awsCredentialsProvider.getCredentials());
+            final AWSCredentials credentials = awsCredentialsProvider.getCredentials();
+            aws4Signer.sign(awsSignableRequest, credentials);
 
             // extract session token if temporary credentials are provided
             String sessionToken = "";
-            if ((awsCredentialsProvider.getCredentials() instanceof BasicSessionCredentials)) {
-                sessionToken = ((BasicSessionCredentials) awsCredentialsProvider.getCredentials()).getSessionToken();
+            if ((credentials instanceof BasicSessionCredentials)) {
+                sessionToken = ((BasicSessionCredentials) credentials).getSessionToken();
             }
 
             final NeptuneSigV4Signature signature =
