@@ -15,14 +15,16 @@
 
 package com.amazonaws.neptune.auth;
 
-import com.amazonaws.DefaultRequest;
-import com.amazonaws.SignableRequest;
-import com.amazonaws.auth.AWS4Signer;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.http.HttpMethodName;
-import com.amazonaws.util.SdkHttpUtils;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import software.amazon.awssdk.auth.signer.Aws4Signer;
+import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.utils.http.SdkHttpUtils;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.core.sync.RequestBody;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -30,24 +32,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
 
-import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static com.amazonaws.auth.internal.SignerConstants.HOST;
-import static com.amazonaws.auth.internal.SignerConstants.X_AMZ_DATE;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
 
 /**
  * Base implementation of {@link NeptuneSigV4Signer} interface.
  * <p>
  * This implementation uses the internal AWS SDK signer to sign requests. The constructor
- * requires the region name for which to sign as well as an {@link AWSCredentialsProvider}
+ * requires the region name for which to sign as well as an {@link AwsCredentialsProvider}
  * providing access to the credentials used for signing the request. The service name used
  * within the signing process is hardcoded to be "neptune-db", which is the official name
  * of the Amazon Neptune service.
  * <p>
  * The implementation uses the following approach for signing the request:
  * <ol>
- *     <li>Convert the input request nto an AWS SDK {@link SignableRequest}.</li>
- *     <li>Sign the {@link SignableRequest} using an AWS SDK {@link AWS4Signer}</li>
+ *     <li>Convert the input request nto an AWS SDK {@link SdkHttpFullRequest}.</li>
+ *     <li>Sign the {@link SdkHttpFullRequest} using an AWS SDK {@link Aws4Signer}</li>
  *     <li>\Attach the computed authorization headers to the input request, thus signing it</li>
  * </ol>
  *
@@ -67,13 +70,13 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * The AWS credentials provider, providing access to the credentials.
      * This needs to be provided by the caller when initializing the signer.
      */
-    private final AWSCredentialsProvider awsCredentialsProvider;
+    private final AwsCredentialsProvider awsCredentialsProvider;
+    private final Region awsRegion;
 
     /**
-     * The {@link AWS4Signer} used internally to compute the request signature.
+     * The {@link Aws4Signer} used internally to compute the request signature.
      */
-    private final AWS4Signer aws4Signer;
-
+    private final Aws4Signer aws4Signer;
 
     /**
      * Create a {@link NeptuneSigV4Signer} instance for the given region and service name.
@@ -83,21 +86,19 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * @throws NeptuneSigV4SignerException in case initialization fails
      */
     public NeptuneSigV4SignerBase(
-            final String regionName, final AWSCredentialsProvider awsCredentialsProvider)
+            final String regionName, final AwsCredentialsProvider awsCredentialsProvider)
             throws NeptuneSigV4SignerException {
 
         checkNotNull(regionName, "The region name must not be null");
         checkNotNull(awsCredentialsProvider, "The credentials provider must not be null");
         this.awsCredentialsProvider = awsCredentialsProvider;
+        this.awsRegion = Region.of(regionName);
 
-        // initialize the signer delegate
+        // initialize the signer 
         // => note that using the signer with multiple threads is safe as long as we do not
         //    change the configuration; so what we do here is setting the configuration on init
         //    and, forthon, will only call the aws4Signer.sign() method
-        aws4Signer = new AWS4Signer();
-        aws4Signer.setRegionName(regionName);
-        aws4Signer.setServiceName(NEPTUNE_SERVICE_NAME);
-
+        aws4Signer = Aws4Signer.create();
     }
 
     /**
@@ -117,10 +118,10 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * the struct returned from the signing process).
      *
      * @param nativeRequest the native HTTP request
-     * @return the {@link SignableRequest}
+     * @return the {@link SdkHttpFullRequest}
      * @throws NeptuneSigV4SignerException in case something goes wrong during translation
      */
-    protected abstract SignableRequest<?> toSignableRequest(final T nativeRequest) throws NeptuneSigV4SignerException;
+    protected abstract SdkHttpFullRequest toSignableRequest(final T nativeRequest) throws NeptuneSigV4SignerException;
 
     /**
      * Attach the signature provided in the signature object to the nativeRequest.
@@ -154,24 +155,30 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
 
             // 1. Convert the Apache Http request into an AWS SDK signable request
             //    => to be implemented in subclass
-            final SignableRequest<?> awsSignableRequest = toSignableRequest(request);
+            final SdkHttpFullRequest awsSignableRequest = toSignableRequest(request);
 
             // 2. Sign the AWS SDK signable request (which internally adds some HTTP headers)
             //    => generic, using the AWS SDK signer
-            final AWSCredentials credentials = awsCredentialsProvider.getCredentials();
-            aws4Signer.sign(awsSignableRequest, credentials);
+            final AwsCredentials credentials = awsCredentialsProvider.resolveCredentials();
+            final Aws4SignerParams awsSignerParams = Aws4SignerParams.builder().
+                awsCredentials(credentials).
+                signingName(NEPTUNE_SERVICE_NAME).
+                signingRegion(awsRegion).
+                build();
+            
+            final SdkHttpFullRequest awsSignedRequest = aws4Signer.sign(awsSignableRequest, awsSignerParams);
 
             // extract session token if temporary credentials are provided
             String sessionToken = "";
-            if ((credentials instanceof BasicSessionCredentials)) {
-                sessionToken = ((BasicSessionCredentials) credentials).getSessionToken();
+            if ((credentials instanceof AwsSessionCredentials)) {
+                sessionToken = ((AwsSessionCredentials) credentials).sessionToken();
             }
 
             final NeptuneSigV4Signature signature =
                     new NeptuneSigV4Signature(
-                            awsSignableRequest.getHeaders().get(HOST),
-                            awsSignableRequest.getHeaders().get(X_AMZ_DATE),
-                            awsSignableRequest.getHeaders().get(AUTHORIZATION),
+                            awsSignedRequest.matchingHeaders(HOST).get(0),
+                            awsSignedRequest.matchingHeaders(X_AMZ_DATE).get(0),
+                            awsSignedRequest.matchingHeaders(AUTHORIZATION).get(0),
                             sessionToken);
 
             // 3. Copy over the Signature V4 headers to the original request
@@ -181,12 +188,11 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
         } catch (final Throwable t) {
 
             throw new NeptuneSigV4SignerException(t);
-
         }
     }
 
     /**
-     * Helper method to create an AWS SDK {@link SignableRequest} based on HTTP information.
+     * Helper method to create an AWS SDK {@link SdkHttpFullRequest} based on HTTP information.
      * None of the information passed in here must be null. Can (yet must not) be used by
      * implementing classes.
      * <p>
@@ -198,18 +204,18 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * @param httpMethodName name of the HTTP method (e.g. "GET", "POST", ...)
      * @param httpEndpointUri URI of the endpoint to which the HTTP request is sent. E.g. http://[host]:port/
      * @param resourcePath the resource path of the request. /resource/id is the path in http://[host]:port/resource/id
-     * @param httpHeaders the headers, defined as a mapping from keys (header name) to values (header values)
+     * @param httpHeaders the headers, defined as a mapping from keys (header name) to a list of values (header [values,values])
      * @param httpParameters the parameters, defined as a mapping from keys (parameter names) to a list of values
      * @param httpContent the content carried by the HTTP request; use an empty InputStream for GET requests
      *
      * @return the resulting AWS SDK signable request
      * @throws NeptuneSigV4SignerException in case something goes wrong signing the request
      */
-    protected SignableRequest<?> convertToSignableRequest(
+    protected SdkHttpFullRequest convertToSignableRequest(
             final String httpMethodName,
             final URI httpEndpointUri,
             final String resourcePath,
-            final Map<String, String> httpHeaders,
+            final Map<String, List<String>> httpHeaders,
             final Map<String, List<String>> httpParameters,
             final InputStream httpContent) throws NeptuneSigV4SignerException {
 
@@ -219,14 +225,21 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
         checkNotNull(httpParameters, "Http parameters must not be null");
         checkNotNull(httpContent, "Http content name must not be null");
 
-        // create the HTTP AWS SDK Signable Request and carry over information
-        final DefaultRequest<?> awsRequest = new DefaultRequest(NEPTUNE_SERVICE_NAME);
-        awsRequest.setHttpMethod(HttpMethodName.fromValue(httpMethodName));
-        awsRequest.setEndpoint(httpEndpointUri);
-        awsRequest.setResourcePath(resourcePath);
-        awsRequest.setHeaders(httpHeaders);
-        awsRequest.setParameters(httpParameters);
-        awsRequest.setContent(httpContent);
+        final SdkHttpFullRequest awsRequest;
+
+        try {
+            //create the HTTP AWS SDK Signable Request and carry over information
+            awsRequest = SdkHttpFullRequest.builder().
+                method(SdkHttpMethod.fromValue(httpMethodName)).
+                uri(httpEndpointUri).
+                encodedPath(resourcePath).
+                headers(httpHeaders).
+                rawQueryParameters(httpParameters).
+                contentStreamProvider(RequestBody.fromInputStream(httpContent,httpContent.available()).contentStreamProvider()).
+                build();
+        } catch (IOException e) {
+            throw new NeptuneSigV4SignerException(e);
+        }
 
         return awsRequest;
     }

@@ -15,7 +15,8 @@
 
 package com.amazonaws.neptune.auth;
 
-import com.amazonaws.SignableRequest;
+import software.amazon.awssdk.http.ContentStreamProvider;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -28,6 +29,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -78,6 +81,7 @@ public class NeptuneNettyHttpSigV4SignerTest extends NeptuneSigV4SignerAbstractT
     @Test
     public void toSignableRequestNoHostInUri() throws Exception {
         final String uri = TEST_REQUEST_PATH_WITH_SLASH;
+        String signableRequestBody = new String();
 
         final FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.GET,
@@ -89,15 +93,19 @@ public class NeptuneNettyHttpSigV4SignerTest extends NeptuneSigV4SignerAbstractT
         request.headers().add(HOST_HEADER_NAME, TEST_ENDPOINT);
 
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(request);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(request);
 
         // verification
-        assertEquals("", IOUtils.toString(signableRequest.getContent(), StandardCharsets.UTF_8));
-        assertEquals(URI.create(TEST_ENDPOINT_URI), signableRequest.getEndpoint());
-        assertEquals(TEST_REQUEST_PATH_WITH_SLASH, signableRequest.getResourcePath());
-        Map<String, String> headers = signableRequest.getHeaders();
+        if(signableRequest.contentStreamProvider().isPresent()) {
+                ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
+                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+        }
+        assertEquals("", signableRequestBody);
+        assertEquals(URI.create(TEST_ENDPOINT_URI).getAuthority(), signableRequest.getUri().getAuthority());
+        assertEquals(TEST_REQUEST_PATH_WITH_SLASH, signableRequest.encodedPath());
+        Map<String, List<String>> headers = signableRequest.headers();
         assertEquals(2, headers.size());
-        assertEquals(HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals(HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
+        assertEquals(Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals(Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
     }
 }
