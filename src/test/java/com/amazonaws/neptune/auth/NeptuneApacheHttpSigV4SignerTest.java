@@ -15,7 +15,7 @@
 
 package com.amazonaws.neptune.auth;
 
-import com.amazonaws.SignableRequest;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
@@ -57,17 +57,17 @@ public class NeptuneApacheHttpSigV4SignerTest extends NeptuneSigV4SignerAbstract
         final HttpRequestWrapper wrapper = HttpRequestWrapper.wrap(request, httpHost);
 
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(wrapper);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(wrapper);
 
         // verify
-        Map<String, List<String>> headers = signableRequest.getHeaders();
+        Map<String, List<String>> headers = signableRequest.headers();
         assertEquals("Headers host size should be 2", 2, headers.size());
-        assertEquals("Non host header should be retained", HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals("Non host header should be retained", HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
-        assertEquals("Endpoint returned is not as expected", URI.create(TEST_ENDPOINT_URI),
-                signableRequest.getEndpoint());
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
+        assertEquals("Endpoint returned is not as expected", URI.create(TEST_FULL_URI),
+                signableRequest.getUri());
         assertEquals("Resource returned is not as expected", TEST_REQUEST_PATH,
-                signableRequest.getResourcePath());
+                signableRequest.encodedPath());
     }
 
     @Override

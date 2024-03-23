@@ -15,8 +15,8 @@
 
 package com.amazonaws.neptune.auth;
 
-import com.amazonaws.SignableRequest;
-import com.amazonaws.auth.AWSCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -30,13 +30,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static com.amazonaws.auth.internal.SignerConstants.HOST;
-import static com.amazonaws.auth.internal.SignerConstants.X_AMZ_DATE;
-import static com.amazonaws.auth.internal.SignerConstants.X_AMZ_SECURITY_TOKEN;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_SECURITY_TOKEN;
 
 /**
  * Signer for HTTP requests made via Apache Commons {@link HttpUriRequest}s.
@@ -62,14 +63,14 @@ public class NeptuneApacheHttpSigV4Signer extends NeptuneSigV4SignerBase<HttpUri
      * @throws NeptuneSigV4SignerException in case initialization fails
      */
     public NeptuneApacheHttpSigV4Signer(
-            final String regionName, final AWSCredentialsProvider awsCredentialsProvider)
+            final String regionName, final AwsCredentialsProvider awsCredentialsProvider)
             throws NeptuneSigV4SignerException {
 
         super(regionName, awsCredentialsProvider);
     }
 
     @Override
-    protected SignableRequest<?> toSignableRequest(final HttpUriRequest request)
+    protected SdkHttpFullRequest toSignableRequest(final HttpUriRequest request)
             throws NeptuneSigV4SignerException {
 
         // make sure the request is not null and contains the minimal required set of information
@@ -79,11 +80,12 @@ public class NeptuneApacheHttpSigV4Signer extends NeptuneSigV4SignerBase<HttpUri
 
         // convert the headers to the internal API format
         final Header[] headers = request.getAllHeaders();
-        final Map<String, String> headersInternal = new HashMap<>();
+
+        final Map<String, List<String>> headersInternal = new HashMap<>();
         for (final Header header : headers) {
             // Skip adding the Host header as the signing process will add one.
             if (!header.getName().equalsIgnoreCase(HOST)) {
-                headersInternal.put(header.getName(), header.getValue());
+                headersInternal.put(header.getName(), Arrays.asList(header.getValue()));
             }
         }
 
