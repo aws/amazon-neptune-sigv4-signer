@@ -15,10 +15,9 @@
 
 package com.amazonaws.neptune.auth;
 
-import com.amazonaws.SignableRequest;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.internal.SignerConstants;
-import org.apache.commons.io.IOUtils;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.http.ContentStreamProvider;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,11 +26,16 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
 
 /**
  * Defines the basic set of tests that each signer implementation should pass.
@@ -62,7 +66,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
     protected static final String TEST_AUTHORIZATION_HEADER_VALUE = "Authorization Header";
     protected static final String TEST_SESSION_TOKEN_VALUE = "Session Token";
 
-    protected final AWSCredentialsProvider awsCredentialsProvider = mock(AWSCredentialsProvider.class);
+    protected final AwsCredentialsProvider awsCredentialsProvider = mock(AwsCredentialsProvider.class);
 
     private NeptuneSigV4SignerBase<T> signer;
 
@@ -88,6 +92,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         // prep
         final String uri = TEST_FULL_URI;
         final Map<String, String> requestHeaders = new HashMap<>();
+        String signableRequestBody = new String();
         requestHeaders.put(HEADER_ONE_NAME, HEADER_ONE_VALUE);
         requestHeaders.put(HEADER_TWO_NAME, HEADER_TWO_VALUE);
         requestHeaders.put(HOST_HEADER_NAME, TEST_ENDPOINT);
@@ -95,19 +100,23 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final T request = createGetRequest(uri, requestHeaders);
 
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(request);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(request);
 
         // verify
-        final Map<String, List<String>> headers = signableRequest.getHeaders();
+        final Map<String, List<String>> headers = signableRequest.headers();
         assertEquals("Headers host size should be 2", 2, headers.size());
-        assertEquals("Non host header should be retained", HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals("Non host header should be retained", HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
-        assertEquals("Request content should be blank", "",
-                IOUtils.toString(signableRequest.getContent(), StandardCharsets.UTF_8));
-        assertEquals("Unexpected endpoint", URI.create(TEST_ENDPOINT_URI),
-                signableRequest.getEndpoint());
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
+
+        if(signableRequest.contentStreamProvider().isPresent()) {
+                ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
+                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+        }
+        assertEquals("Request content should be blank", "", signableRequestBody);
+        assertEquals("Unexpected endpoint", URI.create(TEST_FULL_URI),
+                signableRequest.getUri());
         assertEquals("Unexpected resource path", TEST_REQUEST_PATH,
-                signableRequest.getResourcePath());
+                signableRequest.encodedPath());
     }
 
     @Test
@@ -131,19 +140,19 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final T request = createGetRequest(uri, requestHeaders);
 
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(request);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(request);
 
         // verify
-        final Map<String, List<String>> headers = signableRequest.getHeaders();
+        final Map<String, List<String>> headers = signableRequest.headers();
         assertEquals("Headers host size should be 2", 2, headers.size());
-        assertEquals("Non host header should be retained", HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals("Non host header should be retained", HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
-        assertEquals("Unexpected endpoint", URI.create(TEST_ENDPOINT_URI),
-                signableRequest.getEndpoint());
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
+        assertEquals("Unexpected endpoint", URI.create(uri).getAuthority(),
+                signableRequest.getUri().getAuthority());
         assertEquals("Unexpected resource path", TEST_REQUEST_PATH,
-                signableRequest.getResourcePath());
+                signableRequest.encodedPath());
 
-        final Map<String, List<String>> queryParams = signableRequest.getParameters();
+        final Map<String, List<String>> queryParams = signableRequest.rawQueryParameters();
         assertEquals("Unexpected query param", plainQuery,
                 queryParams.get("query").get(0));
     }
@@ -155,6 +164,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final String uri = TEST_FULL_URI;
         final String requestBody = TEST_SPARQL_QUERY;
         final Map<String, String> requestHeaders = new HashMap<>();
+        String signableRequestBody = new String();
         requestHeaders.put(HEADER_ONE_NAME, HEADER_ONE_VALUE);
         requestHeaders.put(HEADER_TWO_NAME, HEADER_TWO_VALUE);
         requestHeaders.put(HOST_HEADER_NAME, TEST_ENDPOINT);
@@ -162,18 +172,22 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         final T request = createPostRequest(uri, requestHeaders, requestBody);
 
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(request);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(request);
 
         // verify
-        final Map<String, List<String>> headers = signableRequest.getHeaders();
+        final Map<String, List<String>> headers = signableRequest.headers();
         assertEquals("Headers host size should be 2", 2, headers.size());
-        assertEquals("Non host header should be retained", HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals("Non host header should be retained", HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
-        assertEquals("", requestBody, IOUtils.toString(signableRequest.getContent(), StandardCharsets.UTF_8));
-        assertEquals("Unexpected endpoint", URI.create(TEST_ENDPOINT_URI),
-                signableRequest.getEndpoint());
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
+        if(signableRequest.contentStreamProvider().isPresent()) {
+                ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
+                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+        }
+        assertEquals("Request content should match", requestBody, signableRequestBody);
+        assertEquals("Unexpected endpoint", URI.create(TEST_FULL_URI),
+                signableRequest.getUri());
         assertEquals("Unexpected resource path", TEST_REQUEST_PATH,
-                signableRequest.getResourcePath());
+                signableRequest.encodedPath());
     }
 
 
@@ -189,17 +203,17 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
 
         final T request = createGetRequest(uri, requestHeaders);
         // call
-        final SignableRequest signableRequest = signer.toSignableRequest(request);
+        final SdkHttpFullRequest signableRequest = signer.toSignableRequest(request);
 
         // verify
-        final Map<String, List<String>> headers = signableRequest.getHeaders();
+        final Map<String, List<String>> headers = signableRequest.headers();
         assertEquals("Headers host size should be 2", 2, headers.size());
-        assertEquals("Non host header should be retained", HEADER_ONE_VALUE, headers.get(HEADER_ONE_NAME));
-        assertEquals("Non host header should be retained", HEADER_TWO_VALUE, headers.get(HEADER_TWO_NAME));
-        assertEquals("Unexpected endpoint", URI.create(TEST_ENDPOINT_URI),
-                signableRequest.getEndpoint());
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_ONE_VALUE), headers.get(HEADER_ONE_NAME));
+        assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
+        assertEquals("Unexpected endpoint", URI.create(TEST_FULL_URI_WITH_SLASH),
+                signableRequest.getUri());
         assertEquals("Unexpected resource path", TEST_REQUEST_PATH_WITH_SLASH,
-                signableRequest.getResourcePath());
+                signableRequest.encodedPath());
     }
 
     @Test(expected = NeptuneSigV4SignerException.class)
@@ -234,11 +248,11 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         signer.attachSignature(request, signature);
 
         final Map<String, String> attachedHeaders = getRequestHeaders(request);
-        assertEquals(hostname, attachedHeaders.get(SignerConstants.HOST));
-        assertEquals(dateHeader, attachedHeaders.get(SignerConstants.X_AMZ_DATE));
+        assertEquals(hostname, attachedHeaders.get(HOST));
+        assertEquals(dateHeader, attachedHeaders.get(X_AMZ_DATE));
         assertEquals(HEADER_ONE_VALUE, attachedHeaders.get(HEADER_ONE_NAME));
         assertEquals(HEADER_TWO_VALUE, attachedHeaders.get(HEADER_TWO_NAME));
-        assertEquals(authHeader, attachedHeaders.get(SignerConstants.AUTHORIZATION));
+        assertEquals(authHeader, attachedHeaders.get(AUTHORIZATION));
     }
 
     @Test
