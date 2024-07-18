@@ -98,7 +98,7 @@ public class NeptuneNettyHttpSigV4SignerTest extends NeptuneSigV4SignerAbstractT
         // verification
         if(signableRequest.contentStreamProvider().isPresent()) {
                 ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
-                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+                signableRequestBody = IOUtils.toString(csp.newStream(), StandardCharsets.UTF_8);
         }
         assertEquals("", signableRequestBody);
         assertEquals(URI.create(TEST_ENDPOINT_URI).getAuthority(), signableRequest.getUri().getAuthority());

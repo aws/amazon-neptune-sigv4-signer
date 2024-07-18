@@ -15,6 +15,7 @@
 
 package com.amazonaws.neptune.auth;
 
+import org.apache.commons.io.IOUtils;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.http.ContentStreamProvider;
@@ -110,7 +111,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
 
         if(signableRequest.contentStreamProvider().isPresent()) {
                 ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
-                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+                signableRequestBody = IOUtils.toString(csp.newStream(), StandardCharsets.UTF_8);
         }
         assertEquals("Request content should be blank", "", signableRequestBody);
         assertEquals("Unexpected endpoint", URI.create(TEST_FULL_URI),
@@ -181,7 +182,7 @@ public abstract class NeptuneSigV4SignerAbstractTest<T> {
         assertEquals("Non host header should be retained", Arrays.asList(HEADER_TWO_VALUE), headers.get(HEADER_TWO_NAME));
         if(signableRequest.contentStreamProvider().isPresent()) {
                 ContentStreamProvider csp = signableRequest.contentStreamProvider().get();
-                signableRequestBody = new String(csp.newStream().readAllBytes(), StandardCharsets.UTF_8);
+                signableRequestBody = IOUtils.toString(csp.newStream(), StandardCharsets.UTF_8);
         }
         assertEquals("Request content should match", requestBody, signableRequestBody);
         assertEquals("Unexpected endpoint", URI.create(TEST_FULL_URI),
