@@ -19,7 +19,7 @@
     <groupId>com.amazonaws</groupId>
     <artifactId>amazon-neptune-sigv4-signer</artifactId>
     <packaging>jar</packaging>
-    <version>3.0.2</version>
+    <version>3.0.1</version>
 
     <name>amazon-neptune-sigv4-signer</name>
     <description>
