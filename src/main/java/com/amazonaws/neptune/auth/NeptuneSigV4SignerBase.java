@@ -15,6 +15,8 @@
 
 package com.amazonaws.neptune.auth;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.neptune.auth.credentials.V1toV2CredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
 import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
@@ -72,6 +74,10 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      */
     private final AwsCredentialsProvider awsCredentialsProvider;
     private final Region awsRegion;
+    /**
+     * AWS Service used to sign the requests
+     */
+    private final String serviceName;
 
     /**
      * The {@link Aws4Signer} used internally to compute the request signature.
@@ -79,20 +85,64 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
     private final Aws4Signer aws4Signer;
 
     /**
+     * Create a {@link NeptuneSigV4Signer} instance for the given region and neptune-db service.
+     *
+     * @param regionName name of the region for which the request is signed
+     * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneSigV4SignerBase(final String regionName,
+                                  final AWSCredentialsProvider v1AwsCredentialProvider) throws NeptuneSigV4SignerException {
+        // Use neptune-db as default service name
+        this(regionName, v1AwsCredentialProvider, NEPTUNE_SERVICE_NAME);
+    }
+
+    /**
      * Create a {@link NeptuneSigV4Signer} instance for the given region and service name.
+     *
+     * @param regionName name of the region for which the request is signed
+     * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
+     * @param serviceName name of the service name used to sign the requests. Defaults to neptune-db
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneSigV4SignerBase(final String regionName,
+                                  final AWSCredentialsProvider v1AwsCredentialProvider,
+                                  final String serviceName) throws NeptuneSigV4SignerException {
+        this(regionName, V1toV2CredentialsProvider.create(v1AwsCredentialProvider), serviceName);
+    }
+
+    /**
+     * Create a {@link NeptuneSigV4Signer} instance for the given region and neptune-db service.
      *
      * @param regionName name of the region for which the request is signed
      * @param awsCredentialsProvider the provider offering access to the credentials used for signing the request
      * @throws NeptuneSigV4SignerException in case initialization fails
      */
-    public NeptuneSigV4SignerBase(
-            final String regionName, final AwsCredentialsProvider awsCredentialsProvider)
+    public NeptuneSigV4SignerBase(final String regionName,
+                                  final AwsCredentialsProvider awsCredentialsProvider) throws NeptuneSigV4SignerException {
+        // Use neptune-db as default service name
+        this(regionName, awsCredentialsProvider, NEPTUNE_SERVICE_NAME);
+    }
+
+    /**
+     * Create a {@link NeptuneSigV4Signer} instance for the given region and service name.
+     *
+     * @param regionName name of the region for which the request is signed
+     * @param awsCredentialsProvider the provider offering access to the credentials used for signing the request
+     * @param serviceName name of the service name used to sign the requests. Defaults to neptune-db
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneSigV4SignerBase(final String regionName,
+                                  final AwsCredentialsProvider awsCredentialsProvider,
+                                  final String serviceName)
             throws NeptuneSigV4SignerException {
 
         checkNotNull(regionName, "The region name must not be null");
         checkNotNull(awsCredentialsProvider, "The credentials provider must not be null");
+        checkNotNull(serviceName, "The serviceName must not be null");
         this.awsCredentialsProvider = awsCredentialsProvider;
         this.awsRegion = Region.of(regionName);
+        this.serviceName = serviceName;
 
         // initialize the signer 
         // => note that using the signer with multiple threads is safe as long as we do not
@@ -162,7 +212,7 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
             final AwsCredentials credentials = awsCredentialsProvider.resolveCredentials();
             final Aws4SignerParams awsSignerParams = Aws4SignerParams.builder().
                 awsCredentials(credentials).
-                signingName(NEPTUNE_SERVICE_NAME).
+                signingName(serviceName).
                 signingRegion(awsRegion).
                 build();
             

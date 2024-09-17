@@ -15,6 +15,7 @@
 
 package com.amazonaws.neptune.auth;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.utils.StringUtils;
@@ -48,13 +49,52 @@ public class NeptuneNettyHttpSigV4Signer extends NeptuneSigV4SignerBase<FullHttp
      * Create a V4 Signer for Netty HTTP requests.
      *
      * @param regionName             name of the region for which the request is signed
+     * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneNettyHttpSigV4Signer(final String regionName,
+                                       final AWSCredentialsProvider v1AwsCredentialProvider) throws NeptuneSigV4SignerException {
+        super(regionName, v1AwsCredentialProvider);
+    }
+
+    /**
+     * Create a V4 Signer for Netty HTTP requests.
+     *
+     * @param regionName             name of the region for which the request is signed
+     * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
+     * @param serviceName            name of the service name used to sign the requests. Defaults to neptune-db
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneNettyHttpSigV4Signer(final String regionName,
+                                       final AWSCredentialsProvider v1AwsCredentialProvider,
+                                       final String serviceName) throws NeptuneSigV4SignerException {
+        super(regionName, v1AwsCredentialProvider, serviceName);
+    }
+
+    /**
+     * Create a V4 Signer for Netty HTTP requests.
+     *
+     * @param regionName             name of the region for which the request is signed
      * @param awsCredentialsProvider the provider offering access to the credentials used for signing the request
      * @throws NeptuneSigV4SignerException in case initialization fails
      */
-    public NeptuneNettyHttpSigV4Signer(
-            final String regionName, final AwsCredentialsProvider awsCredentialsProvider)
-            throws NeptuneSigV4SignerException {
+    public NeptuneNettyHttpSigV4Signer(final String regionName,
+                                       final AwsCredentialsProvider awsCredentialsProvider) throws NeptuneSigV4SignerException {
         super(regionName, awsCredentialsProvider);
+    }
+
+    /**
+     * Create a V4 Signer for Netty HTTP requests.
+     *
+     * @param regionName             name of the region for which the request is signed
+     * @param awsCredentialsProvider the provider offering access to the credentials used for signing the request
+     * @param serviceName            name of the service name used to sign the requests. Defaults to neptune-db
+     * @throws NeptuneSigV4SignerException in case initialization fails
+     */
+    public NeptuneNettyHttpSigV4Signer(final String regionName,
+                                       final AwsCredentialsProvider awsCredentialsProvider,
+                                       final String serviceName) throws NeptuneSigV4SignerException {
+        super(regionName, awsCredentialsProvider, serviceName);
     }
 
     @Override
