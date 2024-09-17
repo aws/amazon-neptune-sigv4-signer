@@ -22,12 +22,12 @@ public class V1toV2CredentialsProviderTest {
 
     @Test
     public void testConversionOfCredentials() {
-        final AWSCredentials sessionCredentials = new BasicAWSCredentials("accessKey", "SecretKey");
-        final AWSCredentialsProvider v1CredentialProvider = buildV1CredentialsProvider(sessionCredentials);
+        final AWSCredentials credentials = new BasicAWSCredentials("accessKey", "SecretKey");
+        final AWSCredentialsProvider v1CredentialProvider = buildV1CredentialsProvider(credentials);
         final AwsCredentialsProvider v2CredentialsProvider = V1toV2CredentialsProvider.create(v1CredentialProvider);
 
         // Assert
-        assertV2Credentials(v2CredentialsProvider, sessionCredentials);
+        assertV2Credentials(v2CredentialsProvider, credentials);
     }
 
     @Test
