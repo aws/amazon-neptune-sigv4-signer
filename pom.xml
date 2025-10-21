@@ -67,19 +67,22 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <aws.sdk.version>2.34.5</aws.sdk.version>
+        <httpclient5.version>5.5.1</httpclient5.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.101.Final</version>
+            <version>4.1.128.Final</version>
         </dependency>
+
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.14</version>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>${httpclient5.version}</version>
         </dependency>
+
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>http-auth-aws</artifactId>
