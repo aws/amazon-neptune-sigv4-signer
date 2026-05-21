@@ -90,7 +90,10 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * @param regionName name of the region for which the request is signed
      * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
      * @throws NeptuneSigV4SignerException in case initialization fails
+     * @deprecated Use {@link #NeptuneSigV4SignerBase(String, AwsCredentialsProvider)} instead.
+     *             SDK v1 support will be removed in a future major version.
      */
+    @Deprecated
     public NeptuneSigV4SignerBase(final String regionName,
                                   final AWSCredentialsProvider v1AwsCredentialProvider) throws NeptuneSigV4SignerException {
         // Use neptune-db as default service name
@@ -104,7 +107,10 @@ public abstract class NeptuneSigV4SignerBase<T> implements NeptuneSigV4Signer<T>
      * @param v1AwsCredentialProvider the provider offering access to the credentials used for signing the request
      * @param serviceName name of the service name used to sign the requests. Defaults to neptune-db
      * @throws NeptuneSigV4SignerException in case initialization fails
+     * @deprecated Use {@link #NeptuneSigV4SignerBase(String, AwsCredentialsProvider, String)} instead.
+     *             SDK v1 support will be removed in a future major version.
      */
+    @Deprecated
     public NeptuneSigV4SignerBase(final String regionName,
                                   final AWSCredentialsProvider v1AwsCredentialProvider,
                                   final String serviceName) throws NeptuneSigV4SignerException {

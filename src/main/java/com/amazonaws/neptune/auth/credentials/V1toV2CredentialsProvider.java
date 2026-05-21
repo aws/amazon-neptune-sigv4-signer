@@ -10,6 +10,15 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 
+/**
+ * Adapter that wraps an AWS SDK v1 {@link AWSCredentialsProvider} as an SDK v2
+ * {@link AwsCredentialsProvider}.
+ *
+ * @deprecated Migrate to SDK v2 credentials directly (e.g.
+ *             {@link software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider}).
+ *             This class will be removed in a future major version.
+ */
+@Deprecated
 public class V1toV2CredentialsProvider implements AwsCredentialsProvider {
     private final AWSCredentialsProvider v1CredentialsProvider;
 
