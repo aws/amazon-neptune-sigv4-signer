@@ -5,7 +5,29 @@ A library for sending AWS Signature Version 4 signed requests over HTTP to [Amaz
 1. [NeptuneApacheHttpSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneApacheHttpSigV4Signer.java) - provides an implementation for signing Apache Http Requests.
 2. [NeptuneNettyHttpSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneNettyHttpSigV4Signer.java) - provides an implementation for signing Netty Http requests
 3. [NeptuneRequestMetadataSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneRequestMetadataSigV4Signer.java) - provides an implementation for a generic Request object RequestMetadata. A user of this class can convert their native HttpRequest into a RequestMetadata object and pass it to this class to create the signature.
- 
+
+## ⚠️ SDK v1 Deprecation Notice
+
+As of version 4.1.0, AWS SDK v1 support is **deprecated** and will be removed in a future major version.
+
+**What changed:**
+- The `aws-java-sdk-core` dependency is now `<optional>true</optional>` — it is no longer pulled transitively. If you still use SDK v1 constructors, you must explicitly declare `aws-java-sdk-core` in your own `pom.xml`.
+- All constructors accepting `com.amazonaws.auth.AWSCredentialsProvider` (SDK v1) are deprecated.
+- The `V1toV2CredentialsProvider` adapter class is deprecated.
+
+**Recommended usage (SDK v2):**
+
+```java
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import com.amazonaws.neptune.auth.NeptuneNettyHttpSigV4Signer;
+
+NeptuneNettyHttpSigV4Signer signer = new NeptuneNettyHttpSigV4Signer(
+    "us-east-1",
+    DefaultCredentialsProvider.create());
+```
+
+## Usage Examples
+
 For examples of usage of this library refer to:
 
 1. [Connecting to Neptune Using Java and Gremlin with Signature Version 4 Signing](https://docs.aws.amazon.com/neptune/latest/userguide/iam-auth-connecting-gremlin-java.html)
