@@ -34,9 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.X_AMZ_DATE;
 
 /**
  * Base implementation of {@link NeptuneSigV4Signer} interface.

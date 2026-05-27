@@ -34,9 +34,9 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.X_AMZ_DATE;
 
 /**
  * Defines the basic set of tests that each signer implementation should pass.

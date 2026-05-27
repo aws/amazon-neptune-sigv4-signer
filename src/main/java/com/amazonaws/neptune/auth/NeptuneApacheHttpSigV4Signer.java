@@ -34,10 +34,10 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.AUTHORIZATION;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.HOST;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_DATE;
-import static software.amazon.awssdk.http.auth.aws.internal.signer.util.SignerConstant.X_AMZ_SECURITY_TOKEN;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.AUTHORIZATION;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.HOST;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.X_AMZ_DATE;
+import static software.amazon.awssdk.http.auth.aws.signer.SignerConstant.X_AMZ_SECURITY_TOKEN;
 
 /**
  * Signer for HTTP requests made via Apache Commons {@link HttpUriRequest}s.
