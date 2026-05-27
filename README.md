@@ -4,20 +4,33 @@ A library for sending AWS Signature Version 4 signed requests over HTTP to [Amaz
 
 1. [NeptuneApacheHttpSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneApacheHttpSigV4Signer.java) - provides an implementation for signing Apache Http Requests.
 2. [NeptuneNettyHttpSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneNettyHttpSigV4Signer.java) - provides an implementation for signing Netty Http requests
-3. [NeptuneRequestMetadataSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneRequestMetadataSigV4Signer.java) - provides an implementation for a generic Request object RequestMetadata. A user of this class can convert their native HttpRequest into a RequestMetadata object and pass it to this class to create the signature.
+3. [NeptuneJavaHttpSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneJavaHttpSigV4Signer.java) - provides an implementation for signing `java.net.http.HttpRequest` requests (the standard Java HTTP client)
+4. [NeptuneRequestMetadataSigV4Signer.java](https://github.com/aws/amazon-neptune-sigv4-signer/blob/master/src/main/java/com/amazonaws/neptune/auth/NeptuneRequestMetadataSigV4Signer.java) - provides an implementation for a generic Request object RequestMetadata. A user of this class can convert their native HttpRequest into a RequestMetadata object and pass it to this class to create the signature.
 
 ## Usage
 
-Version 5.0.0 of this library requires **AWS SDK for Java v2** credentials. Use any `AwsCredentialsProvider` implementation from the SDK v2 `auth` module.
+This library requires **AWS SDK for Java v2** credentials. Use any `AwsCredentialsProvider` implementation from the SDK v2 `auth` module.
 
 ```java
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import com.amazonaws.neptune.auth.NeptuneNettyHttpSigV4Signer;
+import com.amazonaws.neptune.auth.NeptuneJavaHttpSigV4Signer;
 
-NeptuneNettyHttpSigV4Signer signer = new NeptuneNettyHttpSigV4Signer(
+// Create the signer
+NeptuneJavaHttpSigV4Signer signer = new NeptuneJavaHttpSigV4Signer(
     "us-east-1",
     DefaultCredentialsProvider.create());
+
+// Sign a java.net.http request
+HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+    .uri(URI.create("https://your-neptune-endpoint:8182/sparql?query=..."))
+    .GET();
+
+signer.signRequest(requestBuilder);
+HttpRequest signedRequest = requestBuilder.build();
 ```
+
+> **Note:** The JVM restricts setting the `Host` header by default. If needed, launch with
+> `-Djdk.httpclient.allowRestrictedHeaders=host`.
 
 ## Usage Examples
 
